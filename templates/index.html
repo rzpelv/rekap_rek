@@ -3,18 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rekap Rekening Koran → Excel</title>
+<title>BRI Rekening Koran → Excel</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg:       #2b2e38;
-    --panel:    #353840;
-    --border:   #454a57;
+    --bg:       #0d0f14;
+    --panel:    #13161e;
+    --border:   #1f2433;
     --accent:   #00c2a8;
     --accent2:  #f5a623;
     --text:     #e8eaf0;
-    --muted:    #9aa0b0;
+    --muted:    #5a6070;
     --success:  #00c2a8;
     --error:    #ff5a5a;
     --mono:     'DM Mono', monospace;
@@ -31,6 +31,14 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+  }
+
+  /* ── Noise texture overlay ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0;
   }
 
   /* ── Header ── */
@@ -111,7 +119,7 @@
   #dropzone:hover,
   #dropzone.drag-over {
     border-color: var(--accent);
-    background: rgba(0,194,168,.06);
+    background: rgba(0,194,168,.04);
   }
 
   #dropzone input[type=file] {
@@ -120,9 +128,20 @@
     width: 100%; height: 100%;
   }
 
-  .drop-icon { font-size: 36px; margin-bottom: 12px; filter: grayscale(0.3); }
-  .drop-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
-  .drop-sub { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .drop-icon {
+    font-size: 36px; margin-bottom: 12px;
+    filter: grayscale(0.3);
+  }
+
+  .drop-title {
+    font-size: 16px; font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .drop-sub {
+    font-family: var(--mono);
+    font-size: 12px; color: var(--muted);
+  }
 
   /* ── File list ── */
   #file-list {
@@ -132,7 +151,7 @@
 
   .file-chip {
     display: flex; align-items: center; gap: 10px;
-    background: rgba(255,255,255,.05);
+    background: rgba(255,255,255,.04);
     border: 1px solid var(--border);
     border-radius: 8px; padding: 10px 14px;
     font-family: var(--mono); font-size: 12px;
@@ -149,7 +168,9 @@
   .file-chip .remove:hover { color: var(--error); }
 
   /* ── Optional fields ── */
-  .fields-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .fields-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  }
 
   .field label {
     display: block;
@@ -160,7 +181,7 @@
 
   .field input {
     width: 100%;
-    background: rgba(0,0,0,.25);
+    background: var(--bg);
     border: 1px solid var(--border);
     border-radius: 8px;
     color: var(--text);
@@ -172,11 +193,16 @@
 
   .field input:focus { border-color: var(--accent); }
   .field input::placeholder { color: var(--muted); }
-  .field-note { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+  .field-note {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--muted); margin-top: 6px;
+  }
 
   /* ── Button ── */
   #btn-process {
-    width: 100%; padding: 16px;
+    width: 100%;
+    padding: 16px;
     background: var(--accent);
     border: none; border-radius: 10px;
     color: #000;
@@ -193,13 +219,18 @@
   #progress-section { display: none; }
 
   .progress-bar-wrap {
-    height: 4px; background: var(--border);
-    border-radius: 99px; overflow: hidden; margin-top: 4px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-top: 4px;
   }
 
   .progress-bar-fill {
-    height: 100%; background: var(--accent);
-    border-radius: 99px; width: 0%;
+    height: 100%;
+    background: var(--accent);
+    border-radius: 99px;
+    width: 0%;
     transition: width .3s;
     animation: pulse-bar 1.5s ease-in-out infinite;
   }
@@ -209,7 +240,10 @@
     50%       { opacity: .6; }
   }
 
-  .progress-label { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: 10px; }
+  .progress-label {
+    font-family: var(--mono); font-size: 12px;
+    color: var(--muted); margin-top: 10px;
+  }
 
   /* ── Result ── */
   #result-section { display: none; }
@@ -217,24 +251,41 @@
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 14px; margin-bottom: 24px;
+    gap: 14px;
+    margin-bottom: 24px;
   }
 
   .stat-box {
-    background: rgba(0,0,0,.2);
+    background: var(--bg);
     border: 1px solid var(--border);
-    border-radius: 10px; padding: 16px 18px;
+    border-radius: 10px;
+    padding: 16px 18px;
   }
 
-  .stat-label { font-family: var(--mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; }
-  .stat-value { font-family: var(--mono); font-size: 22px; font-weight: 500; color: var(--text); line-height: 1.1; }
+  .stat-label {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--muted); text-transform: uppercase;
+    letter-spacing: 1.5px; margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-family: var(--mono); font-size: 22px;
+    font-weight: 500; color: var(--text);
+    line-height: 1.1;
+  }
+
   .stat-value.highlight { color: var(--accent); }
   .stat-value.accent2   { color: var(--accent2); }
-  .stat-sub { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+  .stat-sub {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--muted); margin-top: 4px;
+  }
 
   /* ── Month table ── */
   .month-table {
-    width: 100%; border-collapse: collapse;
+    width: 100%;
+    border-collapse: collapse;
     font-family: var(--mono); font-size: 12px;
     margin-bottom: 24px;
   }
@@ -251,30 +302,33 @@
 
   .month-table td {
     padding: 10px 12px;
-    border-bottom: 1px solid rgba(255,255,255,.05);
+    border-bottom: 1px solid rgba(255,255,255,.04);
     color: var(--text);
   }
 
   .month-table tr:last-child td { border-bottom: none; }
-  .month-table tr:hover td { background: rgba(255,255,255,.03); }
 
   .penj-pill {
     display: inline-block;
-    background: rgba(0,194,168,.15);
+    background: rgba(0,194,168,.12);
     color: var(--accent);
-    border-radius: 4px; padding: 2px 8px; font-size: 11px;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 11px;
   }
 
   /* ── Download button ── */
   #btn-download {
     display: flex; align-items: center; justify-content: center; gap: 10px;
-    width: 100%; padding: 16px;
+    width: 100%;
+    padding: 16px;
     background: transparent;
     border: 2px solid var(--accent);
     border-radius: 10px;
     color: var(--accent);
     font-family: var(--sans); font-size: 15px; font-weight: 700;
-    cursor: pointer; text-decoration: none;
+    cursor: pointer;
+    text-decoration: none;
     transition: background .15s, color .15s, transform .1s;
   }
 
@@ -282,9 +336,12 @@
 
   /* ── Reset ── */
   #btn-reset {
-    width: 100%; padding: 12px;
-    background: none; border: 1px solid var(--border);
-    border-radius: 8px; color: var(--muted);
+    width: 100%;
+    padding: 12px;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
     font-family: var(--mono); font-size: 12px;
     cursor: pointer; margin-top: 10px;
     transition: border-color .15s, color .15s;
@@ -306,14 +363,7 @@
     position: relative; z-index: 1;
     font-family: var(--mono); font-size: 11px;
     color: var(--muted); text-align: center;
-    padding-bottom: 32px; line-height: 1.8;
-  }
-
-  footer .credits { color: var(--accent); font-weight: 500; }
-
-  @media (max-width: 520px) {
-    .fields-row { grid-template-columns: 1fr; }
-    .stats-grid { grid-template-columns: 1fr 1fr; }
+    padding-bottom: 32px;
   }
 </style>
 </head>
@@ -321,19 +371,19 @@
 
 <header>
   <div class="logo-row">
-    <div class="logo-badge">RK</div>
+    <div class="logo-badge">BRI</div>
     <div>
       <h1>Rekening Koran <span>→ Excel</span></h1>
     </div>
   </div>
   <p class="subtitle">
-    Upload PDF rekening koran · otomatis rekap + kategorisasi penjualan · download Excel · semua bank
+    Upload PDF rekening koran BRI → otomatis rekap + kategorisasi penjualan → download Excel
   </p>
 </header>
 
 <main>
 
-  <!-- Upload card -->
+  <!-- ── Upload card ── -->
   <div class="card" id="upload-card">
     <div class="card-label">01 — Upload PDF</div>
 
@@ -341,13 +391,13 @@
       <input type="file" id="file-input" accept=".pdf" multiple>
       <div class="drop-icon">📄</div>
       <div class="drop-title">Drag & drop file PDF di sini</div>
-      <div class="drop-sub">atau klik untuk pilih file · bisa pilih lebih dari satu PDF sekaligus</div>
+      <div class="drop-sub">atau klik untuk pilih file · bisa pilih lebih dari satu PDF</div>
     </div>
 
     <div id="file-list"></div>
   </div>
 
-  <!-- Optional override -->
+  <!-- ── Optional override ── -->
   <div class="card">
     <div class="card-label">02 — Override Info (opsional)</div>
     <div class="fields-row">
@@ -364,12 +414,12 @@
     </div>
   </div>
 
-  <!-- Process button -->
+  <!-- ── Process button ── -->
   <button id="btn-process" disabled onclick="startProcess()">
-    ⚡ Proses &amp; Buat Excel
+    Proses &amp; Buat Excel
   </button>
 
-  <!-- Progress -->
+  <!-- ── Progress ── -->
   <div class="card" id="progress-section">
     <div class="card-label">Memproses...</div>
     <div class="progress-bar-wrap">
@@ -378,7 +428,7 @@
     <div class="progress-label" id="progress-label">Membaca PDF dan menganalisis transaksi...</div>
   </div>
 
-  <!-- Result -->
+  <!-- ── Result ── -->
   <div class="card" id="result-section">
     <div class="card-label">Hasil Rekap</div>
 
@@ -404,18 +454,17 @@
 
 </main>
 
-<footer>
-  Rekap Rekening Koran · data diproses di server &amp; tidak disimpan permanen<br>
-  <span class="credits">by rezapelvian v1.0</span>
-</footer>
+<footer>BRI Rekening Koran Parser · data diproses di server &amp; tidak disimpan permanen</footer>
 
 <script>
   let selectedFiles = [], currentJobId = null, pollTimer = null;
 
+  // ── File selection ──────────────────────────────────────────────────────────
   const fileInput = document.getElementById('file-input');
   const dropzone  = document.getElementById('dropzone');
 
   fileInput.addEventListener('change', e => addFiles([...e.target.files]));
+
   dropzone.addEventListener('dragover',  e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
   dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
   dropzone.addEventListener('drop', e => {
@@ -447,15 +496,18 @@
       </div>
     `).join('');
     document.getElementById('btn-process').disabled = selectedFiles.length === 0;
+    // Reset file input so same file can be re-added after remove
     fileInput.value = '';
   }
 
+  // ── Process ─────────────────────────────────────────────────────────────────
   async function startProcess() {
     if (selectedFiles.length === 0) return;
 
     document.getElementById('btn-process').disabled = true;
     document.getElementById('upload-card').style.opacity = '0.4';
     document.getElementById('upload-card').style.pointerEvents = 'none';
+
     showSection('progress');
 
     const fd = new FormData();
@@ -475,6 +527,7 @@
   }
 
   function pollStatus() {
+    let dots = 0;
     const labels = [
       'Membaca halaman PDF...',
       'Mendeteksi kolom dan transaksi...',
@@ -490,6 +543,7 @@
       try {
         const res  = await fetch(`/status/${currentJobId}`);
         const data = await res.json();
+
         li = Math.min(li + 1, labels.length - 1);
         lbl.textContent = labels[li];
         fill.style.width = `${30 + li * 14}%`;
@@ -510,7 +564,10 @@
     }, 1200);
   }
 
-  function fmt(n) { return new Intl.NumberFormat('id-ID').format(Math.round(n)); }
+  // ── Show result ──────────────────────────────────────────────────────────────
+  function fmt(n) {
+    return new Intl.NumberFormat('id-ID').format(Math.round(n));
+  }
 
   function fmtRp(n) {
     if (n >= 1e12) return `Rp ${(n/1e12).toFixed(2)}T`;
@@ -522,6 +579,7 @@
   function showResult(stats) {
     document.getElementById('progress-section').style.display = 'none';
 
+    // Stats grid
     document.getElementById('stats-grid').innerHTML = `
       <div class="stat-box">
         <div class="stat-label">Perusahaan</div>
@@ -545,8 +603,12 @@
       </div>
     `;
 
-    const months = Object.entries(stats.by_month).sort(([a],[b]) => a.localeCompare(b));
-    document.getElementById('month-tbody').innerHTML = months.map(([m, d]) => `
+    // Month table
+    const tbody = document.getElementById('month-tbody');
+    const months = Object.entries(stats.by_month)
+      .sort(([a],[b]) => a.localeCompare(b));
+
+    tbody.innerHTML = months.map(([m, d]) => `
       <tr>
         <td>${m}</td>
         <td class="right">${fmt(d.count)}</td>
@@ -559,10 +621,13 @@
       </tr>
     `).join('');
 
+    // Download link
     document.getElementById('btn-download').href = `/download/${currentJobId}`;
+
     showSection('result');
   }
 
+  // ── Helpers ──────────────────────────────────────────────────────────────────
   function showSection(name) {
     document.getElementById('progress-section').style.display = name === 'progress' ? 'block' : 'none';
     document.getElementById('result-section').style.display   = name === 'result'   ? 'block' : 'none';
@@ -571,16 +636,17 @@
   function showError(msg) {
     document.getElementById('progress-section').innerHTML = `
       <div class="error-box">⚠ ${msg}</div>
-      <button onclick="resetApp()" style="margin-top:16px;width:100%;padding:12px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:var(--mono);font-size:12px;cursor:pointer">↩ Coba lagi</button>
+      <button id="btn-reset" onclick="resetApp()" style="margin-top:16px">↩ Coba lagi</button>
     `;
   }
 
   function resetApp() {
     clearInterval(pollTimer);
-    currentJobId = null; selectedFiles = [];
+    currentJobId  = null;
+    selectedFiles = [];
     renderFileList();
-    document.getElementById('upload-card').style.opacity = '1';
-    document.getElementById('upload-card').style.pointerEvents = 'auto';
+    document.getElementById('upload-card').style.opacity      = '1';
+    document.getElementById('upload-card').style.pointerEvents= 'auto';
     document.getElementById('inp-company').value = '';
     document.getElementById('inp-account').value = '';
     showSection('none');
