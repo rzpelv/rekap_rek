@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rekap Rekening Koran BRI</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f1117;--panel:#1a1d27;--panel2:#212436;--border:#2e3247;
+  --accent:#3b82f6;--accent2:#1d4ed8;--green:#22c55e;--red:#ef4444;
+  --yellow:#f59e0b;--text:#e2e8f0;--muted:#94a3b8;
+  --penj-bg:#0d2318;--penj-fg:#4ade80;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',Arial,sans-serif;min-height:100vh}
+
+header{background:linear-gradient(135deg,#1e3a5f,#1a2744);padding:18px 32px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--border)}
+.logo{font-size:26px;font-weight:800;color:#60a5fa;letter-spacing:-1px}
+.subtitle{font-size:12px;color:var(--muted);margin-top:3px}
+
+.container{max-width:1280px;margin:0 auto;padding:28px 20px}
+
+/* Upload */
+.upload-zone{border:2px dashed var(--border);border-radius:16px;padding:44px 24px;text-align:center;cursor:pointer;transition:all .2s;background:var(--panel);position:relative}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:#1a2133}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-icon{font-size:44px;margin-bottom:10px}
+.upload-zone h2{font-size:17px;margin-bottom:5px}
+.upload-zone p{color:var(--muted);font-size:13px}
+
+.file-list{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.chip{background:var(--panel2);border:1px solid var(--border);border-radius:20px;padding:4px 14px;font-size:12px;display:flex;align-items:center;gap:6px}
+.chip .rm{cursor:pointer;color:var(--red);font-weight:bold;line-height:1}
+
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 26px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent2)}
+.btn-primary:disabled{background:#334155;color:var(--muted);cursor:not-allowed}
+.btn-green{background:#15803d;color:#fff}
+.btn-green:hover{background:#166534}
+.btn-green:disabled{background:#1f3a2a;color:#4b7a5a;cursor:not-allowed}
+.btn-wrap{text-align:center;margin-top:18px}
+
+/* Progress */
+.progress-wrap{display:none;margin-top:18px}
+.progress-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);width:0%;transition:width .3s;border-radius:3px}
+.progress-msg{text-align:center;color:var(--muted);font-size:12px;margin-top:7px}
+
+/* Alert */
+.alert{padding:13px 17px;border-radius:10px;font-size:13px;margin-top:14px}
+.alert-error{background:#3b1515;border:1px solid #7f1d1d;color:#fca5a5}
+.alert-success{background:#14291a;border:1px solid #166534;color:#86efac}
+
+/* Stats */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:24px}
+.stat-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px}
+.stat-card .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.stat-card .val{font-size:18px;font-weight:700}
+.c-blue{color:#60a5fa}.c-green{color:var(--green)}.c-red{color:var(--red)}.c-yellow{color:var(--yellow)}
+
+/* Download bar */
+.dl-bar{background:var(--panel);border:1px solid #166534;border-radius:12px;padding:15px 20px;display:flex;align-items:center;justify-content:space-between;margin-top:18px;flex-wrap:wrap;gap:10px}
+.dl-bar .info{font-size:13px}.dl-bar .info b{color:var(--green)}
+
+/* Table */
+.tbl-wrap{margin-top:22px;background:var(--panel);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.tbl-head{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px}
+.tbl-head h3{font-size:14px;font-weight:600}
+.filters{display:flex;gap:8px;flex-wrap:wrap}
+.filters input,.filters select{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 11px;font-size:12px;outline:none}
+.filters input:focus,.filters select:focus{border-color:var(--accent)}
+
+.scroll{overflow-x:auto;max-height:540px;overflow-y:auto}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+thead th{background:#1c2133;padding:9px 11px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:2}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+tbody tr:hover{background:var(--panel2)}
+tbody tr.penj{background:var(--penj-bg)}
+tbody tr.penj:hover{background:#112a1c}
+tbody td{padding:8px 11px;vertical-align:top}
+td.num{text-align:right;font-family:'Courier New',monospace}
+td.ctr{text-align:center}
+.debet{color:#f87171}.kredit{color:#4ade80}
+
+.kat-sel{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:3px 7px;font-size:11px;cursor:pointer;outline:none;width:100%}
+.kat-sel.penj{border-color:#166534;color:var(--penj-fg);background:var(--penj-bg)}
+
+.desc-cell{max-width:300px;word-break:break-word;line-height:1.4}
+
+.pagination{display:flex;justify-content:center;align-items:center;gap:6px;padding:14px}
+.pbn{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 11px;cursor:pointer;font-size:12px;transition:all .15s}
+.pbn:hover{border-color:var(--accent)}.pbn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.pbn:disabled{opacity:.35;cursor:not-allowed}
+.pinfo{color:var(--muted);font-size:12px}
+
+.sec-title{font-size:15px;font-weight:700;margin:24px 0 10px}
+.hidden{display:none!important}
+.spinner{display:inline-block;width:15px;height:15px;border:2px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">📊 Rekap Rekening BRI</div>
+    <div class="subtitle">Upload PDF Rekening Koran → Preview → Edit Kategori → Download Excel</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Upload -->
+  <div class="upload-zone" id="dropzone">
+    <input type="file" id="fileInput" accept=".pdf" multiple>
+    <div class="upload-icon">📄</div>
+    <h2>Upload PDF Rekening Koran BRI</h2>
+    <p>Klik atau drag &amp; drop — bisa beberapa file sekaligus</p>
+  </div>
+  <div class="file-list" id="fileList"></div>
+
+  <div class="btn-wrap">
+    <button class="btn btn-primary" id="prosesBtn" disabled onclick="prosesFile()">
+      <span id="btnTxt">⚡ Proses PDF</span>
+    </button>
+  </div>
+
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-msg" id="progressMsg">Memproses PDF...</div>
+  </div>
+
+  <div id="alertBox"></div>
+
+  <!-- Result -->
+  <div id="resultSection" class="hidden">
+
+    <!-- Download bar -->
+    <div class="dl-bar">
+      <div class="info">
+        ✅ File siap — <b id="dlPenjCount">0</b> penjualan dari <b id="dlTxCount">0</b> transaksi
+        &nbsp;·&nbsp; Edit kolom Kategori di tabel lalu klik Download
+      </div>
+      <button class="btn btn-green" id="dlBtn" onclick="downloadExcel()">
+        ⬇ Download Excel
+      </button>
+    </div>
+
+    <!-- KPI -->
+    <div class="stats" id="statsCards"></div>
+
+    <!-- Table -->
+    <div class="sec-title">
+      Detail Transaksi
+      <span id="tblInfo" style="color:var(--muted);font-size:12px;font-weight:400"></span>
+    </div>
+
+    <div class="tbl-wrap">
+      <div class="tbl-head">
+        <h3>Semua Transaksi — ubah kolom <span style="color:var(--yellow)">Kategori</span> untuk edit manual</h3>
+        <div class="filters">
+          <input type="text" id="searchInp" placeholder="🔍 Cari deskripsi..." oninput="filterTable()" style="width:190px">
+          <select id="monthFil" onchange="filterTable()"><option value="">Semua Bulan</option></select>
+          <select id="katFil" onchange="filterTable()">
+            <option value="">Semua Kategori</option>
+            <option value="Penjualan">Penjualan</option>
+            <option value="Non penjualan">Non penjualan</option>
+          </select>
+        </div>
+      </div>
+      <div class="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:38px">No</th>
+              <th style="width:58px">Bulan</th>
+              <th style="width:88px">Tanggal</th>
+              <th>Deskripsi</th>
+              <th style="width:125px">Debet (Rp)</th>
+              <th style="width:125px">Kredit (Rp)</th>
+              <th style="width:125px">Saldo (Rp)</th>
+              <th style="width:140px">Kategori ✏️</th>
+            </tr>
+          </thead>
+          <tbody id="txBody"></tbody>
+        </table>
+      </div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let selectedFiles = [];
+let allTx = [];
+let filteredTx = [];
+let currentPage = 1;
+const PAGE = 100;
+
+// ─── Upload ────────────────────────────────────────────────────────────────
+const dz = document.getElementById('dropzone');
+const fi = document.getElementById('fileInput');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag'); addFiles([...e.dataTransfer.files]); });
+fi.addEventListener('change', () => { addFiles([...fi.files]); fi.value = ''; });
+
+function addFiles(files) {
+  files.filter(f => f.name.toLowerCase().endsWith('.pdf')).forEach(f => {
+    if (!selectedFiles.find(x => x.name === f.name && x.size === f.size))
+      selectedFiles.push(f);
+  });
+  renderChips();
+}
+function removeFile(i) { selectedFiles.splice(i, 1); renderChips(); }
+function renderChips() {
+  document.getElementById('fileList').innerHTML = selectedFiles.map((f, i) =>
+    `<div class="chip">📄 ${f.name} <span class="rm" onclick="removeFile(${i})">✕</span></div>`
+  ).join('');
+  document.getElementById('prosesBtn').disabled = !selectedFiles.length;
+}
+
+// ─── Proses ────────────────────────────────────────────────────────────────
+async function prosesFile() {
+  if (!selectedFiles.length) return;
+  const btn = document.getElementById('prosesBtn');
+  const txt = document.getElementById('btnTxt');
+  btn.disabled = true;
+  txt.innerHTML = '<span class="spinner"></span> Memproses...';
+  document.getElementById('progressWrap').style.display = 'block';
+  document.getElementById('resultSection').classList.add('hidden');
+  document.getElementById('alertBox').innerHTML = '';
+
+  animProgress(['Membaca PDF...','Parsing transaksi...','Menganalisa kategori...','Menyiapkan data...']);
+
+  const fd = new FormData();
+  selectedFiles.forEach(f => fd.append('pdfs', f));
+
+  try {
+    const res  = await fetch('/proses', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      showAlert(data.error || 'Terjadi kesalahan', 'error');
+    } else {
+      allTx = data.transactions;
+      renderResult(data);
+    }
+  } catch(e) {
+    showAlert('Gagal terhubung ke server: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    txt.innerHTML = '⚡ Proses PDF';
+    document.getElementById('progressWrap').style.display = 'none';
+  }
+}
+
+function animProgress(msgs) {
+  let pct = 0, mi = 0;
+  const fill = document.getElementById('progressFill');
+  const msg  = document.getElementById('progressMsg');
+  msg.textContent = msgs[0];
+  const iv = setInterval(() => {
+    pct = Math.min(pct + Math.random() * 9, 88);
+    fill.style.width = pct + '%';
+    const ni = Math.min(Math.floor(pct / 25), msgs.length - 1);
+    if (ni > mi) { mi = ni; msg.textContent = msgs[mi]; }
+    if (pct >= 88) clearInterval(iv);
+  }, 220);
+}
+
+// ─── Render result ─────────────────────────────────────────────────────────
+function renderResult(data) {
+  const fmt = n => n ? n.toLocaleString('id-ID', {minimumFractionDigits:0}) : '-';
+  const m = data.meta;
+  const totalK = allTx.reduce((s,t) => s+t.kredit, 0);
+  const totalD = allTx.reduce((s,t) => s+t.debet, 0);
+
+  document.getElementById('statsCards').innerHTML = `
+    <div class="stat-card"><div class="lbl">Rekening</div><div class="val c-blue" style="font-size:13px">${m.accountNo}</div></div>
+    <div class="stat-card"><div class="lbl">Nama</div><div class="val c-blue" style="font-size:12px">${m.companyName}</div></div>
+    <div class="stat-card"><div class="lbl">Total Transaksi</div><div class="val c-blue">${data.total_tx}</div></div>
+    <div class="stat-card"><div class="lbl">Total Kredit</div><div class="val c-green" style="font-size:14px">Rp ${fmt(totalK)}</div></div>
+    <div class="stat-card"><div class="lbl">Total Debet</div><div class="val c-red" style="font-size:14px">Rp ${fmt(totalD)}</div></div>
+    <div class="stat-card" id="penjCard"><div class="lbl">Total Penjualan</div><div class="val c-yellow" style="font-size:14px" id="penjVal">Rp ${fmt(allTx.filter(t=>t.kategori==='Penjualan').reduce((s,t)=>s+t.kredit,0))}</div></div>
+    <div class="stat-card"><div class="lbl">Saldo Akhir</div><div class="val c-blue" style="font-size:14px">Rp ${fmt(m.closing)}</div></div>
+  `;
+
+  // Month filter
+  const months = [...new Set(allTx.map(t => t.month))];
+  document.getElementById('monthFil').innerHTML = '<option value="">Semua Bulan</option>' +
+    months.map(m => `<option value="${m}">${m}</option>`).join('');
+
+  updateDLBar();
+  filteredTx = [...allTx];
+  currentPage = 1;
+  renderTable();
+  document.getElementById('resultSection').classList.remove('hidden');
+  document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
+}
+
+function updateDLBar() {
+  const penj = allTx.filter(t => t.kategori === 'Penjualan');
+  document.getElementById('dlTxCount').textContent  = allTx.length;
+  document.getElementById('dlPenjCount').textContent = penj.length;
+  const fmt = n => n.toLocaleString('id-ID', {minimumFractionDigits:0});
+  const penjVal = document.getElementById('penjVal');
+  if (penjVal) penjVal.textContent = 'Rp ' + fmt(penj.reduce((s,t) => s+t.kredit, 0));
+}
+
+// ─── Table ─────────────────────────────────────────────────────────────────
+function filterTable() {
+  const q  = document.getElementById('searchInp').value.toLowerCase();
+  const mo = document.getElementById('monthFil').value;
+  const ka = document.getElementById('katFil').value;
+  filteredTx = allTx.filter(t =>
+    (!q  || t.desc.toLowerCase().includes(q)) &&
+    (!mo || t.month === mo) &&
+    (!ka || t.kategori === ka)
+  );
+  currentPage = 1;
+  renderTable();
+}
+
+function renderTable() {
+  const pages = Math.max(1, Math.ceil(filteredTx.length / PAGE));
+  const slice = filteredTx.slice((currentPage-1)*PAGE, currentPage*PAGE);
+  const fmt   = n => n ? n.toLocaleString('id-ID', {minimumFractionDigits:2,maximumFractionDigits:2}) : '';
+
+  document.getElementById('tblInfo').textContent = `(${filteredTx.length} transaksi)`;
+
+  document.getElementById('txBody').innerHTML = slice.map(t => {
+    const p = t.kategori === 'Penjualan';
+    const gi = allTx.indexOf(t);
+    return `<tr class="${p?'penj':''}" id="tr-${gi}">
+      <td class="ctr">${t.no}</td>
+      <td class="ctr" style="font-size:11px">${t.month}</td>
+      <td class="ctr" style="font-size:11px;white-space:nowrap">${t.date}</td>
+      <td class="desc-cell">${esc(t.desc)}</td>
+      <td class="num debet">${t.debet ? fmt(t.debet) : ''}</td>
+      <td class="num kredit">${t.kredit ? fmt(t.kredit) : ''}</td>
+      <td class="num">${fmt(t.balance)}</td>
+      <td>
+        <select class="kat-sel ${p?'penj':''}" onchange="changeKat(${gi},this)">
+          <option ${p?'selected':''}>Penjualan</option>
+          <option ${!p?'selected':''}>Non penjualan</option>
+        </select>
+      </td>
+    </tr>`;
+  }).join('');
+
+  renderPagination(pages);
+}
+
+function changeKat(gi, sel) {
+  allTx[gi].kategori = sel.value;
+  const p = sel.value === 'Penjualan';
+  sel.className = 'kat-sel' + (p ? ' penj' : '');
+  const tr = document.getElementById(`tr-${gi}`);
+  if (tr) tr.className = p ? 'penj' : '';
+  updateDLBar();
+}
+
+function renderPagination(pages) {
+  if (pages <= 1) { document.getElementById('pagination').innerHTML = ''; return; }
+  let h = `<button class="pbn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹</button>`;
+  for (let p=1; p<=pages; p++) {
+    if (pages>8 && p>2 && p<pages-1 && Math.abs(p-currentPage)>2) {
+      if (p===3||p===pages-2) h+='<span style="color:var(--muted);padding:0 3px">…</span>';
+      continue;
+    }
+    h += `<button class="pbn ${p===currentPage?'active':''}" onclick="goPage(${p})">${p}</button>`;
+  }
+  h += `<button class="pbn" onclick="goPage(${currentPage+1})" ${currentPage===pages?'disabled':''}>›</button>`;
+  h += `<span class="pinfo">&nbsp;${(currentPage-1)*PAGE+1}–${Math.min(currentPage*PAGE,filteredTx.length)} dari ${filteredTx.length}</span>`;
+  document.getElementById('pagination').innerHTML = h;
+}
+
+function goPage(p) {
+  currentPage = p;
+  renderTable();
+  document.querySelector('.scroll').scrollTop = 0;
+}
+
+// ─── Download ──────────────────────────────────────────────────────────────
+async function downloadExcel() {
+  const btn = document.getElementById('dlBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Menyiapkan Excel...';
+
+  // Kirim ulang PDF + override kategori → server generate Excel baru
+  const fd = new FormData();
+  selectedFiles.forEach(f => fd.append('pdfs', f));
+  fd.append('overrides', JSON.stringify(allTx.map(t => ({ no: t.no, kategori: t.kategori }))));
+
+  try {
+    const res = await fetch('/download', { method: 'POST', body: fd });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      showAlert(err.error || 'Gagal generate Excel', 'error');
+      return;
+    }
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    const acc  = allTx[0] ? `rekap_${allTx[0].month.replace(' ','_')}` : 'rekap';
+    a.href = url;
+    a.download = `${acc}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch(e) {
+    showAlert('Error: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '⬇ Download Excel';
+  }
+}
+
+function showAlert(msg, type) {
+  document.getElementById('alertBox').innerHTML =
+    `<div class="alert alert-${type}">${msg}</div>`;
+}
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>
