@@ -5,29 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rekap Rekening Koran → Excel</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg:        #F4F6F9;
-    --white:     #FFFFFF;
-    --border:    #DDE2EA;
-    --border2:   #C8D0DC;
-    --accent:    #2563EB;
-    --accent-h:  #1D4ED8;
-    --accent-lt: #EEF3FD;
-    --green:     #16A34A;
-    --green-lt:  #DCFCE7;
-    --red:       #DC2626;
-    --red-lt:    #FEE2E2;
-    --orange:    #D97706;
-    --orange-lt: #FEF3C7;
-    --text:      #1E2633;
-    --text2:     #4B5563;
-    --text3:     #9CA3AF;
-    --mono:      'JetBrains Mono', monospace;
-    --sans:      'Inter', sans-serif;
-    --shadow:    0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
-    --shadow-md: 0 4px 12px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.04);
+    --bg:       #2b2e38;
+    --panel:    #353840;
+    --border:   #454a57;
+    --accent:   #00c2a8;
+    --accent2:  #f5a623;
+    --text:     #e8eaf0;
+    --muted:    #9aa0b0;
+    --success:  #00c2a8;
+    --error:    #ff5a5a;
+    --mono:     'DM Mono', monospace;
+    --sans:     'Syne', sans-serif;
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -36,90 +27,91 @@
     background: var(--bg);
     color: var(--text);
     font-family: var(--sans);
-    font-size: 14px;
     min-height: 100vh;
-  }
-
-  /* ── Top bar ── */
-  .topbar {
-    background: var(--white);
-    border-bottom: 1px solid var(--border);
-    padding: 0 24px;
-    height: 56px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    position: sticky; top: 0; z-index: 100;
-    box-shadow: var(--shadow);
-  }
-
-  .topbar-logo {
-    width: 32px; height: 32px;
-    background: var(--accent);
-    border-radius: 8px;
-    display: grid; place-items: center;
-    color: white;
-    font-family: var(--mono);
-    font-size: 11px; font-weight: 500;
-    letter-spacing: -0.5px;
-    flex-shrink: 0;
-  }
-
-  .topbar-title {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--text);
-  }
-
-  .topbar-sub {
-    font-size: 12px;
-    color: var(--text3);
-    margin-left: 4px;
-  }
-
-  /* ── Page ── */
-  .page {
-    max-width: 780px;
-    margin: 0 auto;
-    padding: 32px 20px 80px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    align-items: center;
+  }
+
+  /* ── Header ── */
+  header {
+    width: 100%; max-width: 860px;
+    padding: 52px 24px 0;
+    position: relative; z-index: 1;
+  }
+
+  .logo-row {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 12px;
+  }
+
+  .logo-badge {
+    width: 44px; height: 44px;
+    background: var(--accent);
+    border-radius: 10px;
+    display: grid; place-items: center;
+    font-family: var(--mono); font-weight: 500;
+    font-size: 15px; color: #000;
+    letter-spacing: -1px;
+  }
+
+  h1 {
+    font-size: clamp(26px, 4vw, 38px);
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    line-height: 1.1;
+  }
+
+  h1 span { color: var(--accent); }
+
+  .subtitle {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 10px;
+    letter-spacing: 0.3px;
+  }
+
+  /* ── Main layout ── */
+  main {
+    width: 100%; max-width: 860px;
+    padding: 40px 24px 80px;
+    position: relative; z-index: 1;
+    display: flex; flex-direction: column; gap: 24px;
   }
 
   /* ── Card ── */
   .card {
-    background: var(--white);
+    background: var(--panel);
     border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 24px;
-    box-shadow: var(--shadow);
+    border-radius: 16px;
+    padding: 28px 32px;
   }
 
-  .card-title {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--text3);
+  .card-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
     text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 16px;
+    letter-spacing: 2px;
+    margin-bottom: 18px;
   }
 
   /* ── Drop zone ── */
   #dropzone {
-    border: 2px dashed var(--border2);
-    border-radius: 10px;
-    padding: 40px 20px;
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 48px 24px;
     text-align: center;
     cursor: pointer;
     transition: border-color .2s, background .2s;
     position: relative;
-    background: var(--bg);
   }
 
-  #dropzone:hover, #dropzone.drag-over {
+  #dropzone:hover,
+  #dropzone.drag-over {
     border-color: var(--accent);
-    background: var(--accent-lt);
+    background: rgba(0,194,168,.06);
   }
 
   #dropzone input[type=file] {
@@ -128,315 +120,294 @@
     width: 100%; height: 100%;
   }
 
-  .drop-icon { font-size: 32px; margin-bottom: 10px; }
+  .drop-icon { font-size: 36px; margin-bottom: 12px; filter: grayscale(0.3); }
+  .drop-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .drop-sub { font-family: var(--mono); font-size: 12px; color: var(--muted); }
 
-  .drop-title {
-    font-size: 15px; font-weight: 600;
-    color: var(--text); margin-bottom: 4px;
-  }
-
-  .drop-sub { font-size: 13px; color: var(--text3); }
-
-  /* ── File chips ── */
+  /* ── File list ── */
   #file-list {
     display: flex; flex-direction: column; gap: 8px;
-    margin-top: 12px;
+    margin-top: 16px;
   }
 
   .file-chip {
     display: flex; align-items: center; gap: 10px;
-    background: var(--bg);
+    background: rgba(255,255,255,.05);
     border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 10px 14px;
-    font-size: 13px;
+    border-radius: 8px; padding: 10px 14px;
+    font-family: var(--mono); font-size: 12px;
   }
 
-  .file-chip .icon { font-size: 16px; }
-  .file-chip .name { flex: 1; font-weight: 500; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .file-chip .size { color: var(--text3); font-family: var(--mono); font-size: 11px; flex-shrink: 0; }
+  .file-chip .icon { color: var(--accent2); font-size: 16px; }
+  .file-chip .name { flex: 1; color: var(--text); }
+  .file-chip .size { color: var(--muted); }
   .file-chip .remove {
-    background: none; border: none;
-    color: var(--text3); cursor: pointer;
-    padding: 2px 6px; border-radius: 4px;
-    font-size: 14px; line-height: 1;
-    transition: color .15s, background .15s;
+    background: none; border: none; color: var(--muted);
+    cursor: pointer; padding: 2px 6px; border-radius: 4px;
+    font-size: 14px; transition: color .15s;
   }
-  .file-chip .remove:hover { color: var(--red); background: var(--red-lt); }
+  .file-chip .remove:hover { color: var(--error); }
 
-  /* ── Fields ── */
+  /* ── Optional fields ── */
   .fields-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
   .field label {
     display: block;
-    font-size: 12px; font-weight: 600;
-    color: var(--text2);
-    margin-bottom: 6px;
+    font-family: var(--mono); font-size: 11px;
+    color: var(--muted); text-transform: uppercase;
+    letter-spacing: 1.5px; margin-bottom: 8px;
   }
 
   .field input {
     width: 100%;
-    background: var(--white);
-    border: 1px solid var(--border2);
+    background: rgba(0,0,0,.25);
+    border: 1px solid var(--border);
     border-radius: 8px;
     color: var(--text);
-    font-family: var(--sans); font-size: 13px;
-    padding: 9px 12px;
+    font-family: var(--mono); font-size: 13px;
+    padding: 11px 14px;
     outline: none;
-    transition: border-color .15s, box-shadow .15s;
+    transition: border-color .2s;
   }
 
-  .field input:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(37,99,235,.1);
-  }
-
-  .field input::placeholder { color: var(--text3); }
-  .field-note { font-size: 11px; color: var(--text3); margin-top: 5px; }
+  .field input:focus { border-color: var(--accent); }
+  .field input::placeholder { color: var(--muted); }
+  .field-note { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 6px; }
 
   /* ── Button ── */
   #btn-process {
-    width: 100%; padding: 13px;
+    width: 100%; padding: 16px;
     background: var(--accent);
     border: none; border-radius: 10px;
-    color: white;
-    font-family: var(--sans); font-size: 14px; font-weight: 600;
+    color: #000;
+    font-family: var(--sans); font-size: 15px; font-weight: 700;
+    letter-spacing: -0.3px;
     cursor: pointer;
-    transition: background .15s, transform .1s, box-shadow .15s;
-    box-shadow: 0 2px 8px rgba(37,99,235,.25);
+    transition: opacity .15s, transform .1s;
   }
 
-  #btn-process:hover:not(:disabled) {
-    background: var(--accent-h);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(37,99,235,.3);
-  }
-
-  #btn-process:active:not(:disabled) { transform: translateY(0); }
-  #btn-process:disabled { opacity: .4; cursor: not-allowed; transform: none; box-shadow: none; }
+  #btn-process:hover:not(:disabled) { opacity: .88; transform: translateY(-1px); }
+  #btn-process:disabled { opacity: .35; cursor: not-allowed; transform: none; }
 
   /* ── Progress ── */
   #progress-section { display: none; }
 
   .progress-bar-wrap {
-    height: 6px; background: var(--border);
-    border-radius: 99px; overflow: hidden; margin: 12px 0 8px;
+    height: 4px; background: var(--border);
+    border-radius: 99px; overflow: hidden; margin-top: 4px;
   }
 
   .progress-bar-fill {
     height: 100%; background: var(--accent);
     border-radius: 99px; width: 0%;
-    transition: width .4s ease;
+    transition: width .3s;
+    animation: pulse-bar 1.5s ease-in-out infinite;
   }
 
-  .progress-label { font-size: 13px; color: var(--text2); }
+  @keyframes pulse-bar {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: .6; }
+  }
+
+  .progress-label { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: 10px; }
 
   /* ── Result ── */
   #result-section { display: none; }
 
-  .result-header {
-    display: flex; align-items: flex-start;
-    justify-content: space-between; gap: 12px;
-    flex-wrap: wrap; margin-bottom: 20px;
-  }
-
-  .result-company { font-size: 16px; font-weight: 700; color: var(--text); }
-  .result-meta { font-size: 12px; color: var(--text3); margin-top: 3px; }
-
-  .badge {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 4px 10px; border-radius: 99px;
-    font-size: 12px; font-weight: 600;
-    flex-shrink: 0;
-  }
-
-  .badge-green { background: var(--green-lt); color: var(--green); }
-  .badge-blue  { background: var(--accent-lt); color: var(--accent); }
-
-  /* ── Stats row ── */
-  .stats-row {
+  .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 12px; margin-bottom: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px; margin-bottom: 24px;
   }
 
   .stat-box {
-    background: var(--bg);
+    background: rgba(0,0,0,.2);
     border: 1px solid var(--border);
-    border-radius: 10px; padding: 14px 16px;
+    border-radius: 10px; padding: 16px 18px;
   }
 
-  .stat-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 6px; }
-  .stat-value { font-size: 20px; font-weight: 700; color: var(--text); line-height: 1.1; font-family: var(--mono); }
-  .stat-value.green { color: var(--green); }
-  .stat-value.blue  { color: var(--accent); }
-  .stat-sub { font-size: 11px; color: var(--text3); margin-top: 3px; }
+  .stat-label { font-family: var(--mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; }
+  .stat-value { font-family: var(--mono); font-size: 22px; font-weight: 500; color: var(--text); line-height: 1.1; }
+  .stat-value.highlight { color: var(--accent); }
+  .stat-value.accent2   { color: var(--accent2); }
+  .stat-sub { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 4px; }
 
-  /* ── Table ── */
-  .tbl-wrap { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 20px; }
-
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-
-  thead th {
-    background: var(--bg); padding: 10px 14px;
-    font-size: 11px; font-weight: 600; color: var(--text3);
-    text-transform: uppercase; letter-spacing: .8px;
-    text-align: left; border-bottom: 1px solid var(--border);
+  /* ── Month table ── */
+  .month-table {
+    width: 100%; border-collapse: collapse;
+    font-family: var(--mono); font-size: 12px;
+    margin-bottom: 24px;
   }
 
-  thead th.right, tbody td.right { text-align: right; }
-
-  tbody td {
-    padding: 11px 14px;
+  .month-table th {
+    color: var(--muted); text-align: left;
+    font-weight: 500; padding: 8px 12px;
     border-bottom: 1px solid var(--border);
+    text-transform: uppercase; letter-spacing: 1px; font-size: 10px;
+  }
+
+  .month-table th.right,
+  .month-table td.right { text-align: right; }
+
+  .month-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255,255,255,.05);
     color: var(--text);
   }
 
-  tbody tr:last-child td { border-bottom: none; }
-  tbody tr:hover { background: var(--bg); }
+  .month-table tr:last-child td { border-bottom: none; }
+  .month-table tr:hover td { background: rgba(255,255,255,.03); }
 
-  .penj-val { color: var(--green); font-weight: 600; font-family: var(--mono); font-size: 12px; }
-  .kredit-val { font-family: var(--mono); font-size: 12px; color: var(--text2); }
-  .dash { color: var(--text3); }
+  .penj-pill {
+    display: inline-block;
+    background: rgba(0,194,168,.15);
+    color: var(--accent);
+    border-radius: 4px; padding: 2px 8px; font-size: 11px;
+  }
 
   /* ── Download button ── */
   #btn-download {
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    width: 100%; padding: 13px;
-    background: var(--green); border: none; border-radius: 10px;
-    color: white; font-family: var(--sans); font-size: 14px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%; padding: 16px;
+    background: transparent;
+    border: 2px solid var(--accent);
+    border-radius: 10px;
+    color: var(--accent);
+    font-family: var(--sans); font-size: 15px; font-weight: 700;
     cursor: pointer; text-decoration: none;
-    transition: background .15s, transform .1s;
-    box-shadow: 0 2px 8px rgba(22,163,74,.25);
+    transition: background .15s, color .15s, transform .1s;
   }
 
-  #btn-download:hover { background: #15803D; transform: translateY(-1px); }
+  #btn-download:hover { background: var(--accent); color: #000; transform: translateY(-1px); }
 
   /* ── Reset ── */
   #btn-reset {
-    width: 100%; padding: 10px; margin-top: 10px;
-    background: none; border: 1px solid var(--border2);
-    border-radius: 8px; color: var(--text2);
-    font-family: var(--sans); font-size: 13px;
-    cursor: pointer; transition: border-color .15s, background .15s;
+    width: 100%; padding: 12px;
+    background: none; border: 1px solid var(--border);
+    border-radius: 8px; color: var(--muted);
+    font-family: var(--mono); font-size: 12px;
+    cursor: pointer; margin-top: 10px;
+    transition: border-color .15s, color .15s;
   }
 
-  #btn-reset:hover { border-color: var(--text2); background: var(--bg); }
+  #btn-reset:hover { border-color: var(--muted); color: var(--text); }
 
   /* ── Error ── */
   .error-box {
-    background: var(--red-lt); border: 1px solid #FECACA;
-    border-radius: 10px; padding: 14px 16px;
-    font-size: 13px; color: var(--red);
-    display: flex; align-items: flex-start; gap: 8px;
+    background: rgba(255,90,90,.08);
+    border: 1px solid rgba(255,90,90,.25);
+    border-radius: 10px; padding: 16px 18px;
+    font-family: var(--mono); font-size: 13px;
+    color: var(--error);
   }
-
-  /* ── Divider ── */
-  .divider { height: 1px; background: var(--border); margin: 16px 0; }
 
   /* ── Footer ── */
   footer {
-    text-align: center; padding: 0 0 32px;
-    font-size: 12px; color: var(--text3);
+    position: relative; z-index: 1;
+    font-family: var(--mono); font-size: 11px;
+    color: var(--muted); text-align: center;
+    padding-bottom: 32px; line-height: 1.8;
   }
+
+  footer .credits { color: var(--accent); font-weight: 500; }
 
   @media (max-width: 520px) {
     .fields-row { grid-template-columns: 1fr; }
-    .stats-row  { grid-template-columns: 1fr 1fr; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
   }
 </style>
 </head>
 <body>
 
-<div class="topbar">
-  <div class="topbar-logo">RK</div>
-  <span class="topbar-title">Rekap Rekening Koran</span>
-  <span class="topbar-sub">→ Excel</span>
-</div>
+<header>
+  <div class="logo-row">
+    <div class="logo-badge">RK</div>
+    <div>
+      <h1>Rekening Koran <span>→ Excel</span></h1>
+    </div>
+  </div>
+  <p class="subtitle">
+    Upload PDF rekening koran · otomatis rekap + kategorisasi penjualan · download Excel · semua bank
+  </p>
+</header>
 
-<div class="page">
+<main>
 
-  <!-- Upload -->
+  <!-- Upload card -->
   <div class="card" id="upload-card">
-    <div class="card-title">Upload PDF Rekening Koran</div>
+    <div class="card-label">01 — Upload PDF</div>
 
     <div id="dropzone">
       <input type="file" id="file-input" accept=".pdf" multiple>
       <div class="drop-icon">📄</div>
       <div class="drop-title">Drag & drop file PDF di sini</div>
-      <div class="drop-sub">atau klik untuk pilih file · bisa pilih lebih dari satu sekaligus · semua bank</div>
+      <div class="drop-sub">atau klik untuk pilih file · bisa pilih lebih dari satu PDF sekaligus</div>
     </div>
 
     <div id="file-list"></div>
   </div>
 
-  <!-- Override -->
+  <!-- Optional override -->
   <div class="card">
-    <div class="card-title">Override Info (opsional)</div>
+    <div class="card-label">02 — Override Info (opsional)</div>
     <div class="fields-row">
       <div class="field">
         <label>Nama Perusahaan</label>
         <input type="text" id="inp-company" placeholder="Otomatis dari PDF">
-        <div class="field-note">Kosongkan untuk pakai nama dari PDF</div>
+        <div class="field-note">Kosongkan jika ingin pakai nama dari PDF</div>
       </div>
       <div class="field">
         <label>No. Rekening</label>
         <input type="text" id="inp-account" placeholder="Otomatis dari PDF">
-        <div class="field-note">Kosongkan untuk pakai nomor dari PDF</div>
+        <div class="field-note">Kosongkan jika ingin pakai nomor dari PDF</div>
       </div>
     </div>
   </div>
 
   <!-- Process button -->
   <button id="btn-process" disabled onclick="startProcess()">
-    ⚡ Proses & Buat Excel
+    ⚡ Proses &amp; Buat Excel
   </button>
 
   <!-- Progress -->
   <div class="card" id="progress-section">
-    <div class="card-title">Memproses...</div>
+    <div class="card-label">Memproses...</div>
     <div class="progress-bar-wrap">
-      <div class="progress-bar-fill" id="progress-fill"></div>
+      <div class="progress-bar-fill" id="progress-fill" style="width:30%"></div>
     </div>
     <div class="progress-label" id="progress-label">Membaca PDF dan menganalisis transaksi...</div>
   </div>
 
   <!-- Result -->
   <div class="card" id="result-section">
+    <div class="card-label">Hasil Rekap</div>
 
-    <div class="result-header">
-      <div>
-        <div class="result-company" id="res-company">—</div>
-        <div class="result-meta" id="res-meta">—</div>
-      </div>
-      <span class="badge badge-green">✓ Selesai</span>
-    </div>
+    <div class="stats-grid" id="stats-grid"></div>
 
-    <div class="stats-row" id="stats-row"></div>
-
-    <div class="tbl-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Periode</th>
-            <th class="right">Transaksi</th>
-            <th class="right">Total Kredit</th>
-            <th class="right">Penjualan</th>
-          </tr>
-        </thead>
-        <tbody id="month-tbody"></tbody>
-      </table>
-    </div>
+    <table class="month-table" id="month-table">
+      <thead>
+        <tr>
+          <th>Periode</th>
+          <th class="right">Transaksi</th>
+          <th class="right">Total Kredit</th>
+          <th class="right">Penjualan</th>
+        </tr>
+      </thead>
+      <tbody id="month-tbody"></tbody>
+    </table>
 
     <a id="btn-download" href="#">
-      ⬇ Download Excel
+      <span>⬇</span> Download Excel
     </a>
     <button id="btn-reset" onclick="resetApp()">↩ Proses PDF lain</button>
   </div>
 
-</div>
+</main>
 
-<footer>Rekap Rekening Koran · mendukung semua bank · data tidak disimpan permanen</footer>
+<footer>
+  Rekap Rekening Koran · data diproses di server &amp; tidak disimpan permanen<br>
+  <span class="credits">by rezapelvian v1.0</span>
+</footer>
 
 <script>
   let selectedFiles = [], currentJobId = null, pollTimer = null;
@@ -466,12 +437,13 @@
   }
 
   function renderFileList() {
-    document.getElementById('file-list').innerHTML = selectedFiles.map((f, i) => `
+    const list = document.getElementById('file-list');
+    list.innerHTML = selectedFiles.map((f, i) => `
       <div class="file-chip">
         <span class="icon">📋</span>
         <span class="name">${f.name}</span>
         <span class="size">${(f.size/1024).toFixed(0)} KB</span>
-        <button class="remove" onclick="removeFile(${i})" title="Hapus">✕</button>
+        <button class="remove" onclick="removeFile(${i})">✕</button>
       </div>
     `).join('');
     document.getElementById('btn-process').disabled = selectedFiles.length === 0;
@@ -479,15 +451,12 @@
   }
 
   async function startProcess() {
-    if (!selectedFiles.length) return;
+    if (selectedFiles.length === 0) return;
 
     document.getElementById('btn-process').disabled = true;
-    const uploadCard = document.getElementById('upload-card');
-    uploadCard.style.opacity = '0.5';
-    uploadCard.style.pointerEvents = 'none';
-
-    document.getElementById('progress-section').style.display = 'block';
-    document.getElementById('result-section').style.display   = 'none';
+    document.getElementById('upload-card').style.opacity = '0.4';
+    document.getElementById('upload-card').style.pointerEvents = 'none';
+    showSection('progress');
 
     const fd = new FormData();
     selectedFiles.forEach(f => fd.append('pdfs', f));
@@ -508,37 +477,35 @@
   function pollStatus() {
     const labels = [
       'Membaca halaman PDF...',
-      'Mendeteksi kolom transaksi...',
+      'Mendeteksi kolom dan transaksi...',
       'Menganalisis kategori penjualan...',
       'Membangun file Excel...',
       'Hampir selesai...',
     ];
-    let step = 0;
+    let li = 0;
     const fill = document.getElementById('progress-fill');
     const lbl  = document.getElementById('progress-label');
-
-    fill.style.width = '15%';
 
     pollTimer = setInterval(async () => {
       try {
         const res  = await fetch(`/status/${currentJobId}`);
         const data = await res.json();
-
-        step = Math.min(step + 1, labels.length - 1);
-        lbl.textContent  = labels[step];
-        fill.style.width = `${20 + step * 16}%`;
+        li = Math.min(li + 1, labels.length - 1);
+        lbl.textContent = labels[li];
+        fill.style.width = `${30 + li * 14}%`;
 
         if (data.status === 'done') {
           clearInterval(pollTimer);
           fill.style.width = '100%';
-          setTimeout(() => showResult(data.stats), 400);
+          fill.style.animation = 'none';
+          setTimeout(() => showResult(data.stats), 300);
         } else if (data.status === 'error') {
           clearInterval(pollTimer);
           showError(data.message || 'Terjadi error saat memproses PDF');
         }
       } catch(e) {
         clearInterval(pollTimer);
-        showError('Koneksi terputus. Coba lagi.');
+        showError('Koneksi terputus');
       }
     }, 1200);
   }
@@ -546,81 +513,80 @@
   function fmt(n) { return new Intl.NumberFormat('id-ID').format(Math.round(n)); }
 
   function fmtRp(n) {
-    if (n >= 1e12) return `${(n/1e12).toFixed(2)}T`;
-    if (n >= 1e9)  return `${(n/1e9).toFixed(2)}M`;
-    if (n >= 1e6)  return `${(n/1e6).toFixed(1)}jt`;
-    return fmt(n);
+    if (n >= 1e12) return `Rp ${(n/1e12).toFixed(2)}T`;
+    if (n >= 1e9)  return `Rp ${(n/1e9).toFixed(2)}M`;
+    if (n >= 1e6)  return `Rp ${(n/1e6).toFixed(1)}jt`;
+    return `Rp ${fmt(n)}`;
   }
 
-  function showResult(s) {
+  function showResult(stats) {
     document.getElementById('progress-section').style.display = 'none';
 
-    document.getElementById('res-company').textContent = s.company || '—';
-    document.getElementById('res-meta').textContent    = `${s.account || ''}  ·  ${s.period || ''}`;
-
-    document.getElementById('stats-row').innerHTML = `
+    document.getElementById('stats-grid').innerHTML = `
       <div class="stat-box">
-        <div class="stat-label">Total Transaksi</div>
-        <div class="stat-value blue">${fmt(s.total_tx)}</div>
-        <div class="stat-sub">semua baris</div>
+        <div class="stat-label">Perusahaan</div>
+        <div class="stat-value" style="font-size:14px;line-height:1.4">${stats.company || '—'}</div>
+        <div class="stat-sub">${stats.account || ''}</div>
       </div>
       <div class="stat-box">
-        <div class="stat-label">Penjualan</div>
-        <div class="stat-value green">Rp ${fmtRp(s.total_penj_rp)}</div>
-        <div class="stat-sub">${fmt(s.total_penj)} transaksi</div>
+        <div class="stat-label">Total Transaksi</div>
+        <div class="stat-value">${fmt(stats.total_tx)}</div>
+        <div class="stat-sub">${stats.period || ''}</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Total Penjualan</div>
+        <div class="stat-value highlight">${fmtRp(stats.total_penj_rp)}</div>
+        <div class="stat-sub">${fmt(stats.total_penj)} transaksi</div>
       </div>
       <div class="stat-box">
         <div class="stat-label">Total Kredit</div>
-        <div class="stat-value">Rp ${fmtRp(s.total_kredit)}</div>
-        <div class="stat-sub">semua kredit masuk</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">Total Debet</div>
-        <div class="stat-value">Rp ${fmtRp(s.total_debet)}</div>
-        <div class="stat-sub">semua debet keluar</div>
+        <div class="stat-value accent2">${fmtRp(stats.total_kredit)}</div>
+        <div class="stat-sub">Debet ${fmtRp(stats.total_debet)}</div>
       </div>
     `;
 
-    const months = Object.entries(s.by_month).sort(([a],[b]) => a.localeCompare(b));
+    const months = Object.entries(stats.by_month).sort(([a],[b]) => a.localeCompare(b));
     document.getElementById('month-tbody').innerHTML = months.map(([m, d]) => `
       <tr>
         <td>${m}</td>
         <td class="right">${fmt(d.count)}</td>
-        <td class="right kredit-val">Rp ${fmtRp(d.kredit)}</td>
+        <td class="right">${fmtRp(d.kredit)}</td>
         <td class="right">
           ${d.penjualan > 0
-            ? `<span class="penj-val">Rp ${fmtRp(d.penjualan)}</span>`
-            : '<span class="dash">—</span>'}
+            ? `<span class="penj-pill">${fmtRp(d.penjualan)}</span>`
+            : '<span style="color:var(--muted)">—</span>'}
         </td>
       </tr>
     `).join('');
 
     document.getElementById('btn-download').href = `/download/${currentJobId}`;
-    document.getElementById('result-section').style.display = 'block';
+    showSection('result');
+  }
+
+  function showSection(name) {
+    document.getElementById('progress-section').style.display = name === 'progress' ? 'block' : 'none';
+    document.getElementById('result-section').style.display   = name === 'result'   ? 'block' : 'none';
   }
 
   function showError(msg) {
     document.getElementById('progress-section').innerHTML = `
-      <div class="error-box">⚠ <span>${msg}</span></div>
-      <button id="btn-reset" onclick="resetApp()" style="margin-top:12px;width:100%;padding:10px;background:none;border:1px solid #DDE2EA;border-radius:8px;cursor:pointer;font-size:13px">↩ Coba lagi</button>
+      <div class="error-box">⚠ ${msg}</div>
+      <button onclick="resetApp()" style="margin-top:16px;width:100%;padding:12px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:var(--mono);font-size:12px;cursor:pointer">↩ Coba lagi</button>
     `;
   }
 
   function resetApp() {
     clearInterval(pollTimer);
-    currentJobId = null;
-    selectedFiles = [];
+    currentJobId = null; selectedFiles = [];
     renderFileList();
-    const uc = document.getElementById('upload-card');
-    uc.style.opacity = '1';
-    uc.style.pointerEvents = 'auto';
+    document.getElementById('upload-card').style.opacity = '1';
+    document.getElementById('upload-card').style.pointerEvents = 'auto';
     document.getElementById('inp-company').value = '';
     document.getElementById('inp-account').value = '';
-    document.getElementById('progress-section').style.display = 'none';
-    document.getElementById('result-section').style.display   = 'none';
+    showSection('none');
     document.getElementById('progress-section').innerHTML = `
-      <div class="card-title">Memproses...</div>
-      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progress-fill"></div></div>
+      <div class="card-label">Memproses...</div>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progress-fill" style="width:30%"></div></div>
       <div class="progress-label" id="progress-label">Membaca PDF dan menganalisis transaksi...</div>
     `;
   }
