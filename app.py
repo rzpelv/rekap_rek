@@ -1,138 +1,123 @@
-import os, io, json, tempfile
+import os, uuid, threading, time
+from pathlib import Path
 from flask import Flask, request, jsonify, send_file, render_template
-from werkzeug.utils import secure_filename
-import rekap_rek as rr
 
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50 MB
 
-def allowed(filename):
-    return filename.lower().endswith('.pdf')
+UPLOAD_DIR = Path("/tmp/bri_uploads")
+OUTPUT_DIR = Path("/tmp/bri_outputs")
+UPLOAD_DIR.mkdir(exist_ok=True)
+OUTPUT_DIR.mkdir(exist_ok=True)
 
-def parse_pdfs(files):
-    all_transactions = []
-    meta_combined = {
-        "accountNo": "", "companyName": "", "period": "",
-        "opening": 0, "totalDebet": 0, "totalKredit": 0, "closing": 0
-    }
-    periods = []
-    file_results = []
+jobs = {}
 
-    with tempfile.TemporaryDirectory() as tmpdir:
-        for f in files:
-            if not allowed(f.filename):
-                continue
-            fname = secure_filename(f.filename)
-            fpath = os.path.join(tmpdir, fname)
-            f.save(fpath)
-            try:
-                meta, txs = rr.parse_pdf(fpath)
-                all_transactions.extend(txs)
-                file_results.append({
-                    'file': fname,
-                    'rekening': meta['accountNo'],
-                    'nama': meta['companyName'],
-                    'periode': meta['period'],
-                    'jumlah': len(txs),
-                    'penjualan': sum(1 for t in txs if t['kategori'] == 'Penjualan'),
-                })
-                if not meta_combined['accountNo'] and meta['accountNo']:
-                    meta_combined['accountNo']   = meta['accountNo']
-                    meta_combined['companyName'] = meta['companyName']
-                meta_combined['totalDebet']  += meta['totalDebet']
-                meta_combined['totalKredit'] += meta['totalKredit']
-                if meta['period']:
-                    periods.append(meta['period'])
-                if not meta_combined['opening'] and meta['opening']:
-                    meta_combined['opening'] = meta['opening']
-                if meta['closing']:
-                    meta_combined['closing'] = meta['closing']
-            except Exception as e:
-                file_results.append({'file': fname, 'error': str(e)})
+def _cleanup_old_files():
+    now = time.time()
+    for d in [UPLOAD_DIR, OUTPUT_DIR]:
+        for f in d.iterdir():
+            if now - f.stat().st_mtime > 3600:
+                f.unlink(missing_ok=True)
 
-    if periods:
-        meta_combined['period'] = (
-            f"{periods[0].split(' - ')[0]} - {periods[-1].split(' - ')[-1]}"
-        )
-    return all_transactions, meta_combined, file_results
+def _process_job(job_id, pdf_paths, meta_override):
+    try:
+        import rekap_rek as rk
+        all_txs, metas = [], []
+        for p in pdf_paths:
+            meta, txs = rk.parse_pdf(p)
+            all_txs.extend(txs)
+            metas.append(meta)
 
+        mc = metas[0].copy() if metas else {}
+        for m in metas[1:]:
+            mc["totalDebet"]  += m.get("totalDebet", 0)
+            mc["totalKredit"] += m.get("totalKredit", 0)
+            if m.get("closing"): mc["closing"] = m["closing"]
+        if len(metas) > 1:
+            p0 = metas[0].get("period","").split(" - ")[0]
+            p1 = metas[-1].get("period","").split(" - ")[-1]
+            mc["period"] = f"{p0} - {p1}"
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+        if meta_override.get("companyName"): mc["companyName"] = meta_override["companyName"]
+        if meta_override.get("accountNo"):   mc["accountNo"]   = meta_override["accountNo"]
 
+        out_path = OUTPUT_DIR / f"rekap_{job_id}.xlsx"
+        rk.build_excel(all_txs, mc, str(out_path))
 
-@app.route('/proses', methods=['POST'])
-def proses():
-    files = request.files.getlist('pdfs')
-    if not files or all(f.filename == '' for f in files):
-        return jsonify({'error': 'Tidak ada file yang diupload'}), 400
+        penj = [t for t in all_txs if t["kategori"] == "Penjualan"]
+        by_month = {}
+        for t in all_txs:
+            by_month.setdefault(t["month"], {"debet":0,"kredit":0,"penjualan":0,"count":0})
+            by_month[t["month"]]["debet"]    += t["debet"]
+            by_month[t["month"]]["kredit"]   += t["kredit"]
+            by_month[t["month"]]["count"]    += 1
+            if t["kategori"] == "Penjualan":
+                by_month[t["month"]]["penjualan"] += t["kredit"]
 
-    all_transactions, meta, file_results = parse_pdfs(files)
-    if not all_transactions:
-        return jsonify({'error': 'Tidak ada transaksi berhasil dibaca'}), 400
-
-    return jsonify({
-        'meta': meta,
-        'files': file_results,
-        'total_tx': len(all_transactions),
-        'total_penj': sum(1 for t in all_transactions if t['kategori'] == 'Penjualan'),
-        'transactions': [
-            {
-                'no': i + 1,
-                'month': t['month'],
-                'date': t['date'],
-                'desc': t['desc'],
-                'debet': t['debet'],
-                'kredit': t['kredit'],
-                'balance': t['balance'],
-                'kategori': t['kategori'],
+        jobs[job_id].update({
+            "status": "done",
+            "filename": out_path.name,
+            "stats": {
+                "company":       mc.get("companyName",""),
+                "account":       mc.get("accountNo",""),
+                "period":        mc.get("period",""),
+                "total_tx":      len(all_txs),
+                "total_penj":    len(penj),
+                "total_penj_rp": sum(t["kredit"] for t in penj),
+                "total_debet":   sum(t["debet"]  for t in all_txs),
+                "total_kredit":  sum(t["kredit"] for t in all_txs),
+                "by_month":      by_month,
             }
-            for i, t in enumerate(all_transactions)
-        ]
-    })
-
-
-@app.route('/download', methods=['POST'])
-def download():
-    overrides_raw = request.form.get('overrides', '[]')
-    try:
-        kat_map = {o['no']: o['kategori'] for o in json.loads(overrides_raw)}
-    except Exception:
-        kat_map = {}
-
-    files = request.files.getlist('pdfs')
-    if not files or all(f.filename == '' for f in files):
-        return jsonify({'error': 'Tidak ada file PDF'}), 400
-
-    all_transactions, meta, _ = parse_pdfs(files)
-    if not all_transactions:
-        return jsonify({'error': 'Tidak ada transaksi'}), 400
-
-    for i, tx in enumerate(all_transactions):
-        if (i + 1) in kat_map:
-            tx['kategori'] = kat_map[i + 1]
-
-    acc = meta.get('accountNo', 'rekening')
-    with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as tmp:
-        tmp_path = tmp.name
-    try:
-        rr.build_excel(all_transactions, meta, tmp_path)
-        buf = io.BytesIO()
-        with open(tmp_path, 'rb') as fh:
-            buf.write(fh.read())
-        buf.seek(0)
+        })
+    except Exception as e:
+        import traceback
+        jobs[job_id].update({"status":"error","message":str(e),"trace":traceback.format_exc()})
     finally:
-        os.unlink(tmp_path)
+        for p in pdf_paths:
+            try: Path(p).unlink()
+            except: pass
 
-    return send_file(
-        buf,
-        as_attachment=True,
-        download_name=f"rekap_{acc}.xlsx",
-        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    )
+@app.route("/")
+def index():
+    return render_template("index.html")
 
+@app.route("/upload", methods=["POST"])
+def upload():
+    _cleanup_old_files()
+    files = request.files.getlist("pdfs")
+    if not files or all(f.filename == "" for f in files):
+        return jsonify({"error": "Tidak ada file PDF"}), 400
+    job_id, pdf_paths = uuid.uuid4().hex[:12], []
+    for f in files:
+        if not f.filename.lower().endswith(".pdf"):
+            return jsonify({"error": f"{f.filename} bukan PDF"}), 400
+        dest = UPLOAD_DIR / f"{job_id}_{uuid.uuid4().hex[:6]}.pdf"
+        f.save(dest)
+        pdf_paths.append(str(dest))
+    meta_override = {
+        "companyName": request.form.get("companyName","").strip(),
+        "accountNo":   request.form.get("accountNo","").strip(),
+    }
+    jobs[job_id] = {"status": "processing"}
+    threading.Thread(target=_process_job, args=(job_id, pdf_paths, meta_override), daemon=True).start()
+    return jsonify({"job_id": job_id})
 
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=False)
+@app.route("/status/<job_id>")
+def status(job_id):
+    job = jobs.get(job_id)
+    if not job: return jsonify({"error": "Job tidak ditemukan"}), 404
+    return jsonify(job)
+
+@app.route("/download/<job_id>")
+def download(job_id):
+    job = jobs.get(job_id)
+    if not job or job.get("status") != "done":
+        return jsonify({"error": "File belum siap"}), 404
+    path = OUTPUT_DIR / job["filename"]
+    if not path.exists(): return jsonify({"error": "File tidak ditemukan"}), 404
+    company = job["stats"].get("company","rekap").replace(" ","_")[:20]
+    return send_file(path, as_attachment=True,
+        download_name=f"rekap_bri_{company}.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT",5000)), debug=False)

@@ -27,48 +27,43 @@ MONTHS_ID = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","
 
 # Keyword yang PASTI bukan penjualan meski kredit
 NON_PENJ_KW = [
-    "NAS",           # transfer NAS dan apapun mengandung NAS
-    "INTEREST ON",   # bunga bank
-    " TAX",          # pajak bank
-    "DARI 0",        # transfer antar rekening sendiri (format: DARI 068401...)
-    "BRIVA",         # virtual account
-    "OVERBOOKING",   # pemindahbukuan internal
-    "BY SURAT REF",  # koreksi bank
-    "IFT_TO",        # internal fund transfer
-    "IFT TO",
-    # Pencairan pinjaman / pemindahbukuan internal bank
-    "PMDH BUKUAN",   # pemindahbukuan
-    "PMBY PINJ",     # pembayaran pinjaman
-    "OB ESCROW",     # overbooking escrow
-    "ESCROW",        # escrow
-    "DROP OCBC",     # drop/reversal OCBC
-    "BFST",          # bifast (transfer cepat antar bank, sering internal)
-    # Pencairan kredit / pinjaman
-    "PENCAIRAN",     # pencairan kredit/pinjaman
-    "CAIRKAN",
-    "REALISASI",     # realisasi kredit
-    "DROPING",       # droping kredit
-    "DROPPING",
-    "PLAFON",        # plafon kredit
-    "FASILITAS KRD", # fasilitas kredit
-    "PINJAMAN",      # pinjaman
-    "KMK",           # kredit modal kerja
-    "KPR",           # kredit pemilikan rumah
-    "PENCAIRAN KRD",
-    "CAIR KRD",
-    # RTGS keluar (ESB:RTGS: = outgoing RTGS, bukan penerimaan)
-    "ESB:RTGS:",
+    # Bunga & biaya bank
+    "INTEREST ON", "BUNGA TABUNGAN", "BUNGA DEPOSITO",
+    " TAX", "BIAYA ADM", "BIAYA PROVISI", "ADMINISTRASI",
     # Transfer antar rekening sendiri
-    "FROM:0096",     # transfer antar rekening internal
-    "TO:0096",
+    "DARI 0", "IFT_TO", "IFT TO", "FROM:0096", "TO:0096",
+    "OVERBOOKING", "BY SURAT REF",
+    # Pencairan kredit / pinjaman (uang dari bank, bukan customer)
+    "PENCAIRAN KRD", "CAIR KRD", "PMBY PINJ",
+    "OB ESCROW", "ESCROW", "DROP OCBC",
+    "PLAFON", "FASILITAS KRD", "KMK", "KPR",
+    # Pencairan pinjaman (selain KRD)
+    "PENCAIRAN","DROPING","DROPPING","REALISASI","CAIRKAN",
+    # RTGS keluar
+    "ESB:RTGS:",
+    # Pemindahbukuan internal
+    "PMDH BUKUAN",
 ]
 
-# Keyword yang MENGARAH ke penjualan (uang masuk dari pihak luar)
+# Keyword non-penjualan yang dicek sebagai whole word (hindari false match)
+NON_PENJ_WHOLE_WORD = [
+    "NAS",   # NAS:RELOAD dll — tapi jangan match "NASABAH","TANAS" dll
+    "BRIVA", # virtual account
+]
+
+# Keyword yang PASTI penjualan (pembayaran dari pihak luar / instansi)
 PENJ_KW = [
-    "INKA MULTI","KALTIM NUSA","PUPUK KALTIM","PAYMENT PT",
-    "PMDH BUKUAN","ESB:INDS:0002B","BANK MANDIRI-PEMBAYARA",
-    "BANK BNI-PEMB","S2P","PLN MCTN","PEMBAYARAN PT",
-    "SP2D","SPAN","KASDA",
+    # Pembayaran pemerintah
+    "SP2D","SPAN","KASDA","APBD","APBN","PEMKOT","PEMKAB","PEMPROV",
+    # RS / RSUD / klinik / kesehatan
+    "RSUD","RUMAH SAKIT","PUSKESMAS","KLINIK","LABORATORIUM",
+    # Instansi pendidikan
+    "SEKOLAH","UNIVERSITAS","MADRASAH","PESANTREN",
+    # Perusahaan / instansi umum
+    "PAYMENT PT","PEMBAYARAN PT","BANK MANDIRI-PEMBAYARA","BANK BNI-PEMB",
+    "S2P","PLN ","PDAM","PERTAMINA",
+    # Spesifik dari data existing
+    "INKA MULTI","KALTIM NUSA","PUPUK KALTIM","ESB:INDS:0002B",
 ]
 
 # Kata yang menandai akhir blok transaksi (baris summary / footer)
@@ -96,15 +91,18 @@ TELLER_RE = re.compile(r'^\d{7}$')
 
 # ── Warna Excel ────────────────────────────────────────────────────────────────
 CLR = {
-    "title_bg" : "1F3864",  "title_fg" : "FFFFFF",
-    "sub_bg"   : "2E75B6",  "sub_fg"   : "FFFFFF",
-    "hdr_bg"   : "2E75B6",  "hdr_fg"   : "FFFFFF",
-    "total_bg" : "FFF2CC",
-    "alt_bg"   : "F2F7FB",
-    "penj_bg"  : "E2EFDA",
-    "debet_fg" : "C00000",
-    "kredit_fg": "375623",
-    "border"   : "BDD7EE",
+    # Header: biru slate gelap → teks putih
+    "title_bg" : "2C3E6B",  "title_fg" : "FFFFFF",
+    "sub_bg"   : "4A6FA5",  "sub_fg"   : "FFFFFF",
+    "hdr_bg"   : "4A6FA5",  "hdr_fg"   : "FFFFFF",
+    # Body: putih bersih, alternating sangat tipis
+    "total_bg" : "FFF9E6",
+    "alt_bg"   : "F7F9FC",   # sangat terang, mudah dibaca
+    "penj_bg"  : "EBF7EE",   # hijau muda untuk penjualan
+    # Teks angka
+    "debet_fg" : "C0392B",
+    "kredit_fg": "1A7A3C",
+    "border"   : "D5DDE8",
 }
 NUM_FMT = '#,##0.00'
 
@@ -477,51 +475,39 @@ def _categorize(desc, company_name='', debet=0, kredit=0):
     if _contains_own_name(desc, company_name):
         return 'Non penjualan'
 
-    # Rule 3: Keyword non-penjualan → Non penjualan
-    # NAS dicek sebagai kata utuh (bukan bagian dari kata lain seperti "PENDIDIKAN")
+    # Rule 3: Keyword non-penjualan whole-word (NAS, BRIVA dll)
     import re as _re
-    if _re.search(r'\bNAS\b', up):
-        return 'Non penjualan'
+    for kw in NON_PENJ_WHOLE_WORD:
+        if _re.search(r'\b' + kw + r'\b', up):
+            return 'Non penjualan'
+
+    # Rule 4: Keyword non-penjualan substring
     for kw in NON_PENJ_KW:
-        if kw.upper() == 'NAS':
-            continue  # sudah dicek di atas
         if kw.upper() in up:
             return 'Non penjualan'
 
-    # Rule 3b: RTGS kredit — Penjualan kecuali nama pengirim adalah nama sendiri
-    if kredit > 0 and up.startswith('RTGS#'):
+    # === Dari sini: hanya kredit yang lolos ===
+    if kredit == 0:
+        return 'Non penjualan'
+
+    # Rule 5: RTGS# kredit → Penjualan kecuali nama pengirim adalah nama sendiri
+    if up.startswith('RTGS#'):
         if _rtgs_is_own_or_generic(desc, company_name):
             return 'Non penjualan'
         return 'Penjualan'
 
-    # Rule 4: SP2D atau SPAN → Penjualan (pembayaran dari pemerintah)
-    if 'SP2D' in up or 'SPAN' in up:
-        return 'Penjualan'
-
-    # Rule 5: RTGS masuk (format RTGS#[NAMA] ... BRIRSS)
-    # Hanya penjualan jika nama pengirim BUKAN nama sendiri dan BUKAN kata umum/kota
-    import re as _re2
-    rtgs_match = _re2.match(r'RTGS#(.+?)(?:\s+(?:PT\s+)?RTGS\s+STP|\s+#|\s+ESB:)', up)
-    if rtgs_match and 'BRIRSS' in up:
-        sender = rtgs_match.group(1).strip()
-        # Jika sudah lolos rule 2 (bukan nama sendiri), cek apakah sender cukup spesifik
-        # Kata-kata umum/kota/tidak informatif → Non penjualan
-        VAGUE = {'SURABAYA','JAKARTA','BANDUNG','SEMARANG','MEDAN','MAKASSAR',
-                 'BALI','YOGYAKARTA','SOLO','MALANG','UNKNOWN','STP','RTGS'}
-        sender_words = set(sender.split())
-        if sender_words.issubset(VAGUE):
-            return 'Non penjualan'
-
-    # Rule 5: Keyword penjualan eksplisit
+    # Rule 6: Keyword penjualan eksplisit
     for kw in PENJ_KW:
         if kw.upper() in up:
             return 'Penjualan'
 
-    # Rule 6: Deskripsi terlihat seperti nama badan usaha/instansi → Penjualan
-    if kredit > 0 and _is_company_like(desc):
+    # Rule 7: Deskripsi terlihat seperti nama badan usaha/instansi → Penjualan
+    if _is_company_like(desc):
         return 'Penjualan'
 
-    return 'Non penjualan'
+    # Rule 8: Kredit yang tidak masuk ke kategori manapun di atas
+    # → default Penjualan (lebih baik over-detect, user bisa koreksi via dropdown)
+    return 'Penjualan'
 
 
 # ── Buat Excel ─────────────────────────────────────────────────────────────────
@@ -549,7 +535,7 @@ def build_excel(all_transactions, meta, out_path):
 
     # Title
     ws_ep.merge_cells('A1:G1')
-    ws_ep['A1'] = f"✏️  EDIT KATEGORI PENJUALAN  —  {meta['companyName']}  —  {meta['accountNo']}"
+    ws_ep['A1'] = f"✏️  EDIT KATEGORI TRANSAKSI  —  {meta['companyName']}  —  {meta['accountNo']}"
     ws_ep['A1'].font      = Font(name='Arial', bold=True, color=CLR["title_fg"], size=12)
     ws_ep['A1'].fill      = af(CLR["title_bg"])
     ws_ep['A1'].alignment = Alignment(horizontal='center', vertical='center')
@@ -591,12 +577,13 @@ def build_excel(all_transactions, meta, out_path):
             tx['kredit'] if tx['kredit'] else None,
             tx['kategori']
         ])
-        bg = CLR["penj_bg"] if penj else (CLR["alt_bg"] if i % 2 == 0 else "FFFFFF")
+        bg = CLR["penj_bg"] if penj else ("FFFFFF" if i % 2 == 0 else "F7F9FC")
         for c in range(1, 8):
             cell = ws_ep.cell(row=r, column=c)
             cell.fill   = af(bg)
             cell.border = thin_border()
-            cell.font   = reg()
+            cell.font   = Font(name='Calibri', size=11)
+        ws_ep.row_dimensions[r].height = 18
         ws_ep.cell(row=r, column=1).alignment = Alignment(horizontal='center')
         ws_ep.cell(row=r, column=2).alignment = Alignment(horizontal='center')
         ws_ep.cell(row=r, column=3).alignment = Alignment(horizontal='center')
@@ -622,7 +609,7 @@ def build_excel(all_transactions, meta, out_path):
     ws = wb.create_sheet("Summary")
 
     ws.merge_cells('A1:H1')
-    ws['A1'] = "REKAP REKENING KORAN BRI"
+    ws['A1'] = "REKAP REKENING KORAN"
     ws['A1'].font      = Font(name='Arial', bold=True, color=CLR["title_fg"], size=13)
     ws['A1'].fill      = af(CLR["title_bg"])
     ws['A1'].alignment = Alignment(horizontal='center', vertical='center')
@@ -750,7 +737,8 @@ def build_excel(all_transactions, meta, out_path):
             bg = CLR["penj_bg"] if penj else (CLR["alt_bg"] if i % 2 == 0 else "FFFFFF")
             for c in range(1, 8):
                 cell = ws2.cell(row=r, column=c)
-                cell.fill = af(bg); cell.border = thin_border(); cell.font = reg()
+                cell.fill = af(bg); cell.border = thin_border()
+                cell.font = Font(name='Calibri', size=11)
             ws2.cell(row=r, column=1).alignment = Alignment(horizontal='center')
             ws2.cell(row=r, column=2).alignment = Alignment(horizontal='center')
             d = ws2.cell(row=r, column=4)
